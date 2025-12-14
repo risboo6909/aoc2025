@@ -32,4 +32,7 @@ bin/
 .DS_Store
 
 *.iml
-.idea/
+/.idea/
+/.gradle/
+/.kotlin/
+/build/
