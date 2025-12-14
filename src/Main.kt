@@ -1,12 +1,14 @@
 import calendar.Day1
 import calendar.Day2
+import calendar.Day3
 import kotlin.system.measureTimeMillis
 
 fun main() {
 
     val solvers = mapOf(
         1 to Day1(),
-        2 to Day2()
+        2 to Day2(),
+        3 to Day3(),
     )
 
     val totalTime = measureTimeMillis {
