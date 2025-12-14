@@ -30,23 +30,11 @@ class Day2 : Solver {
         return false
     }
 
-    private fun part1(input: List<Pair<Long, Long>>): Long {
+    private fun solve(input: List<Pair<Long, Long>>, splitHalvesOnly: Boolean): Long {
         var total: Long = 0
         for (pair in input) {
             for (num in pair.first..pair.second) {
-                if (hasRepeatingSubstring(num, true)) {
-                    total += num
-                }
-            }
-        }
-        return total
-    }
-
-    private fun part2(input: List<Pair<Long, Long>>): Long {
-        var total: Long = 0
-        for (pair in input) {
-            for (num in pair.first..pair.second) {
-                if (hasRepeatingSubstring(num, false)) {
+                if (hasRepeatingSubstring(num, splitHalvesOnly)) {
                     total += num
                 }
             }
@@ -61,8 +49,8 @@ class Day2 : Solver {
             tmp[0].toLong() to tmp[1].toLong()
         }
         return listOf(
-            part1(parsed).toString(),
-            part2(parsed).toString()
+            solve(parsed, splitHalvesOnly = true).toString(),
+            solve(parsed, splitHalvesOnly = false).toString()
         )
     }
 }
