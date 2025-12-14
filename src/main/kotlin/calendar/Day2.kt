@@ -21,7 +21,7 @@ class Day2 : Solver {
             1
         }
 
-        for (i in startIndex until (numberAsString.length / 2) + 1) {
+        for (i in startIndex .. (numberAsString.length / 2)) {
             val chunked = numberAsString.chunked(i)
             if (chunked.toSet().size == 1) {
                 return true
