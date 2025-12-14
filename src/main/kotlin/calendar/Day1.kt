@@ -77,7 +77,7 @@ class Day1: Solver {
 
     override fun run(): List<String> {
         val rawInput = getRawInput(1)
-        val parsed = rawInput.split("\n").map {
+        val parsed = rawInput.trim().split("\n").map {
             val direction = it.trim()[0]
             val magnitude = it.trim().substring(1).toInt()
             Pair(direction, magnitude)
