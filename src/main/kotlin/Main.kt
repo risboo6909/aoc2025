@@ -1,6 +1,7 @@
 import calendar.Day1
 import calendar.Day2
 import calendar.Day3
+import calendar.Day4
 import kotlin.system.measureTimeMillis
 
 fun main() {
@@ -9,6 +10,7 @@ fun main() {
         1 to Day1(),
         2 to Day2(),
         3 to Day3(),
+        4 to Day4(),
     )
 
     val totalTime = measureTimeMillis {
@@ -28,5 +30,4 @@ fun main() {
     }
 
     println("Total time: ${totalTime}ms")
-
 }
