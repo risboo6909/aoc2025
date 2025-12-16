@@ -19,7 +19,7 @@ class Day3 : Solver {
         1.0
     )
 
-    private fun solver(input: List<List<Int>>, size: Int): Long {
+    private fun solve(input: List<List<Int>>, size: Int): Long {
         var best: Long = 0
         var total: Long = 0
 
@@ -56,11 +56,11 @@ class Day3 : Solver {
     }
 
     private fun part1(input: List<List<Int>>): Long {
-        return solver(input, 2)
+        return solve(input, 2)
     }
 
     private fun part2(input: List<List<Int>>): Long {
-        return solver(input, 12)
+        return solve(input, 12)
     }
 
     override fun run(): List<String> {
