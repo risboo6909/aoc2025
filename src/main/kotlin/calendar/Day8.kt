@@ -114,7 +114,7 @@ class Day8 : Solver {
             .split('\n')
 
         val points: List<Point> = rawInput.map { line ->
-            val parts = line.split(",")
+            val parts = line.trim().split(",")
             Point(parts[0].toLong(), parts[1].toLong(), parts[2].toLong())
         }
 

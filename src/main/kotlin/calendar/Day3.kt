@@ -66,7 +66,7 @@ class Day3 : Solver {
     override fun run(): List<String> {
         val rawInput = getRawInput(3).trim().split('\n')
         val parsed = rawInput.map {
-            line -> line.toList().map { it.digitToInt() }
+            line -> line.trim().toList().map { it.digitToInt() }
         }
         return listOf(
             part1(parsed).toString(),
