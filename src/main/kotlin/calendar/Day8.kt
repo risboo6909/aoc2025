@@ -47,7 +47,7 @@ class Day8 : Solver {
 
         var iter = 0
 
-        outer@while (true) {
+        outer@ while (true) {
             var src = input[0]
             var dest = input[0]
 
@@ -56,15 +56,19 @@ class Day8 : Solver {
             for (idx1 in 0 until input.size) {
 
                 val point1 = input[idx1]
-
                 for (idx2 in idx1 + 1 until input.size) {
 
                     val point2 = input[idx2]
                     val dist = squaredDist(point1, point2)
 
                     if (minDist > dist) {
-                        if (visited.contains(Pair(point1, point2))) {
-                            continue
+                        if (iter <= iters) {
+                            // for part 1, we should consider points even from the same circuit
+                            // if we haven't checked them yet
+                            if (visited.contains(Pair(point1, point2))) continue
+                        } else {
+                            // for part 2, we should only consider points from different circuits
+                            if (nodeToCircuit[point1] == nodeToCircuit[point2]) continue
                         }
 
                         // found new minimum
@@ -72,7 +76,6 @@ class Day8 : Solver {
                         src = point1
                         dest = point2
                     }
-
                 }
 
             }
@@ -92,8 +95,6 @@ class Day8 : Solver {
                 dest
             )
 
-            visited.add(Pair(src, dest))
-
             if (solution1 == 0L && iter++ >= iters) {
                 solution1 = nodeToCircuit
                     .values
@@ -102,6 +103,8 @@ class Day8 : Solver {
                     .sortedByDescending { (_, v) -> v.size }
                     .take(3)
                     .fold(1) { acc, (_, v) -> acc * v.size }
+            } else {
+                visited.add(Pair(src, dest))
             }
         }
 
