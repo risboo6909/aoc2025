@@ -5,6 +5,7 @@ import calendar.Day4
 import calendar.Day5
 import calendar.Day6
 import calendar.Day7
+import calendar.Day8
 import kotlin.system.measureTimeMillis
 
 fun main() {
@@ -17,6 +18,7 @@ fun main() {
         5 to Day5(),
         6 to Day6(),
         7 to Day7(),
+        8 to Day8(),
     )
 
     try {
