@@ -73,6 +73,8 @@ class Day10 : Solver {
         val numVariables = machine.triggers.size
         val numEquations = machine.part2TargetState.size
 
+        val theoreticalBest = machine.part2TargetState.max()
+
         // lower bounds are always 0
         val upperBounds = IntArray(numVariables) { Int.MAX_VALUE }
 
@@ -94,12 +96,22 @@ class Day10 : Solver {
             }
         }
 
-        fun inner(varIdx: Int) {
+        fun inner(varIdx: Int, sumSoFar: Int) {
+
+            if (solution == theoreticalBest) {
+                // can't do better than this
+                return
+            }
+
+            if (sumSoFar >= solution)  {
+                // already worse than best found
+                return
+            }
 
             if (varIdx >= numVariables) {
                 // check if all equations are satisfied
                 if (remainings.all { it == 0 }) {
-                    solution = min(solution, assignments.sum())
+                    solution = min(solution, sumSoFar)
                 }
                 return
             }
@@ -125,14 +137,14 @@ class Day10 : Solver {
                     remainings[eqIdx] -= equations[eqIdx][varIdx] * value
                 }
 
-                inner(varIdx + 1)
+                inner(varIdx + 1, sumSoFar + value)
 
                 for (eqIdx in 0 until numEquations)
                     remainings[eqIdx] += equations[eqIdx][varIdx] * value
             }
         }
 
-        inner(0)
+        inner(0, 0)
         return solution
     }
 
@@ -140,7 +152,7 @@ class Day10 : Solver {
         var total = 0
         runBlocking {
             val limited = Dispatchers.Default.limitedParallelism(
-                (Runtime.getRuntime().availableProcessors() / 2).coerceAtLeast(1)
+                (Runtime.getRuntime().availableProcessors() - 1).coerceAtLeast(1)
             )
             total = machines.map { machine ->
                 async(limited) {
