@@ -139,8 +139,11 @@ class Day10 : Solver {
     private fun part2(machines: List<Machine>): String {
         var total = 0
         runBlocking {
+            val limited = Dispatchers.Default.limitedParallelism(
+                (Runtime.getRuntime().availableProcessors() / 2).coerceAtLeast(1)
+            )
             total = machines.map { machine ->
-                async(Dispatchers.Default) {
+                async(limited) {
                     val res = solveDiophantineSystem(machine)
                     println("Done solving machine with target ${machine.part2TargetState}")
                     res
