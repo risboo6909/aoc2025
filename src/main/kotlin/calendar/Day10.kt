@@ -210,6 +210,7 @@ class Day10 : Solver {
         return listOf(
             part1(machines),
             // commenting the second part out as it may take a long time to compute
+            "Placeholder for part 2"
             // part2(machines)
         )
     }
