@@ -1,21 +1,201 @@
 package calendar
 
+import kotlin.math.min
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.runBlocking
 import Solver
 
 class Day10 : Solver {
 
-    private fun part1(): String {
-        return "Not implemented"
+    private data class Machine(
+        val part1TargetState: Int,
+        val triggers: List<List<Int>>,
+        val triggersAsInts: List<Int>,
+        val part2TargetState: List<Int>,
+    )
+
+    private fun setBits(bitPositions: List<Int>): Int {
+        var bitMask = 0
+        for (bitPos in bitPositions) {
+            bitMask = (bitMask or (1 shl bitPos))
+        }
+        return bitMask
     }
 
-    private fun part2(): String {
-        return "Not implemented"
+    private fun stateToInt(state: String): Int {
+        val onPositions = state
+            .trim('[')
+            .trim(']')
+            .mapIndexed { idx, ch ->
+                if (ch == '#') {
+                    idx
+                } else {
+                    -1
+                }
+            }.filterNot { it == -1 }.toList()
+        return setBits(onPositions)
+    }
+
+    private fun applyBinaryTrigger(state: Int, trigger: Int): Int {
+        return state xor trigger
+    }
+
+    private fun part1(machines: List<Machine>): String {
+        val cache: MutableMap<Int, Int> = mutableMapOf()
+        var result = 0
+
+        fun inner(currentState: Int, targetState: Int, triggers: List<Int>, steps: Int) {
+            val prevBest = cache.putIfAbsent(currentState, steps) ?: Int.MAX_VALUE
+            if (steps >= prevBest) {
+                return
+            }
+
+            cache[currentState] = steps
+            for (trigger in triggers) {
+                val newState = applyBinaryTrigger(currentState, trigger)
+                inner(newState, targetState, triggers, steps + 1)
+            }
+        }
+
+        for (machine in machines) {
+            cache.clear()
+            inner(0, machine.part1TargetState, machine.triggersAsInts, 0)
+            result += cache[machine.part1TargetState]!!
+        }
+        return result.toString()
+    }
+
+    private fun solveDiophantineSystem(machine: Machine): Int {
+        var solution = Int.MAX_VALUE
+
+        val numVariables = machine.triggers.size
+        val numEquations = machine.part2TargetState.size
+
+        // lower bounds are always 0
+        val upperBounds = IntArray(numVariables) { Int.MAX_VALUE }
+
+        val equations = Array(numEquations) { IntArray(numVariables) { 0 } }
+        val remainings = IntArray(numEquations) { idx -> machine.part2TargetState[idx] }
+
+        val assignments = IntArray(numVariables) { 0 }
+
+        for (equationIdx in machine.part2TargetState.indices) {
+            for (triggerIdx in machine.triggers.indices) {
+                val trigger = machine.triggers[triggerIdx]
+                for (variablePos in trigger) {
+                    if (variablePos == equationIdx) {
+                        equations[equationIdx][triggerIdx] = 1
+                        upperBounds[triggerIdx] = min(upperBounds[triggerIdx],
+                            machine.part2TargetState[equationIdx])
+                    }
+                }
+            }
+        }
+
+        fun inner(varIdx: Int) {
+
+            if (varIdx >= numVariables) {
+                // check if all equations are satisfied
+                if (remainings.all { it == 0 }) {
+                    solution = min(solution, assignments.sum())
+                }
+                return
+            }
+
+            // check constraints
+            for (eqIdx in 0 until numEquations) {
+                if (remainings[eqIdx] < 0)
+                    return
+                var maxPossible = 0
+                for (v in varIdx until numVariables) {
+                    maxPossible += equations[eqIdx][v] * upperBounds[v]
+                }
+
+                if (remainings[eqIdx] > maxPossible) {
+                    return
+                }
+            }
+
+            for (value in 0..upperBounds[varIdx]) {
+                assignments[varIdx] = value
+
+                for (eqIdx in 0 until numEquations) {
+                    remainings[eqIdx] -= equations[eqIdx][varIdx] * value
+                }
+
+                inner(varIdx + 1)
+
+                for (eqIdx in 0 until numEquations)
+                    remainings[eqIdx] += equations[eqIdx][varIdx] * value
+            }
+        }
+
+        inner(0)
+        return solution
+    }
+
+    private fun part2(machines: List<Machine>): String {
+        var total = 0
+        runBlocking {
+            total = machines.map { machine ->
+                async(Dispatchers.Default) {
+                    val res = solveDiophantineSystem(machine)
+                    println("Done solving machine with target ${machine.part2TargetState}")
+                    res
+                }
+            }.awaitAll().sum()
+        }
+        return total.toString()
     }
 
     override fun run(): List<String> {
+        val rawInput = getRawInput(10)
+            .trim()
+            .split('\n')
+        val machines = mutableListOf<Machine>()
+        for (line in rawInput) {
+            val (state, rest) = line
+                .trim()
+                .split(' ', ignoreCase = true, limit = 2)
+            val (triggers, tail) = Pair(
+                rest.substringBeforeLast(' '),
+                rest.substringAfterLast(' ')
+            )
+            val machine = Machine(
+                stateToInt(state),
+                triggers.split(' ')
+                    .map { trigger ->
+                        trigger.trim('(')
+                            .trim(')')
+                            .split(',')
+                            .map { it.toInt() }
+                    },
+                triggers
+                    .split(' ')
+                    .map { trigger ->
+                        setBits(
+                            trigger
+                                .trim('(')
+                                .trim(')')
+                                .split(',')
+                                .map { it.toInt() }
+                        )
+                    },
+                tail
+                    .trim('{')
+                    .trim('}')
+                    .split(',')
+                    .map { it.toInt() },
+            )
+            machines.add(machine)
+        }
+
         return listOf(
-            part1(),
-            part2()
+            part1(machines),
+            // commenting the second part out as it may take a long time to compute
+            // part2(machines)
         )
     }
 }
