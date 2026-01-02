@@ -160,8 +160,9 @@ class Day10 : Solver {
             )
             total = machines.map { machine ->
                 async(limited) {
+                    println("Solving machine: ${machine.part2TargetState}")
                     val res = solveDiophantineSystem(machine)
-                    println("Done solving machine with target ${machine.part2TargetState}")
+                    println("Done solving machine: ${machine.part2TargetState}")
                     res
                 }
             }.awaitAll().sum()
