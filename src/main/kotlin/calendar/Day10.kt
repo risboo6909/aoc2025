@@ -5,6 +5,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
+import kotlin.concurrent.atomics.AtomicInt
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
+
 import Solver
 
 class Day10 : Solver {
@@ -152,17 +155,18 @@ class Day10 : Solver {
         return solution
     }
 
+    @OptIn(ExperimentalAtomicApi::class)
     private fun part2(machines: List<Machine>): String {
         var total = 0
         runBlocking {
             val limited = Dispatchers.Default.limitedParallelism(
                 (Runtime.getRuntime().availableProcessors() - 1).coerceAtLeast(1)
             )
+            val solvedCount = AtomicInt(0)
             total = machines.map { machine ->
                 async(limited) {
-                    println("Solving machine: ${machine.part2TargetState}")
                     val res = solveDiophantineSystem(machine)
-                    println("Done solving machine: ${machine.part2TargetState}")
+                    println("Solved ${solvedCount.fetchAndAdd(1)}/${machines.size} machines")
                     res
                 }
             }.awaitAll().sum()
