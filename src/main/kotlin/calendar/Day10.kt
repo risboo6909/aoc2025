@@ -133,14 +133,18 @@ class Day10 : Solver {
             for (value in 0..upperBounds[varIdx]) {
                 assignments[varIdx] = value
 
-                for (eqIdx in 0 until numEquations) {
-                    remainings[eqIdx] -= equations[eqIdx][varIdx] * value
+                if (value > 0) {
+                    for (eqIdx in 0 until numEquations) {
+                        remainings[eqIdx] -= equations[eqIdx][varIdx] * value
+                    }
                 }
 
                 inner(varIdx + 1, sumSoFar + value)
 
-                for (eqIdx in 0 until numEquations)
-                    remainings[eqIdx] += equations[eqIdx][varIdx] * value
+                if (value > 0) {
+                    for (eqIdx in 0 until numEquations)
+                        remainings[eqIdx] += equations[eqIdx][varIdx] * value
+                }
             }
         }
 
