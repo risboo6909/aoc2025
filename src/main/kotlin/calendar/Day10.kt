@@ -123,7 +123,9 @@ class Day10 : Solver {
             for (eqIdx in 0 until numEquations) {
                 if (remainings[eqIdx] < 0)
                     return
+
                 var maxPossible = 0
+                // pre-caching doesn't help much here
                 for (v in varIdx until numVariables) {
                     maxPossible += equations[eqIdx][v] * upperBounds[v]
                 }
@@ -133,7 +135,16 @@ class Day10 : Solver {
                 }
             }
 
-            for (value in 0..upperBounds[varIdx]) {
+            var upperBound = upperBounds[varIdx]
+            for (eq in 0 until numEquations) {
+                if (equations[eq][varIdx] > 0) {
+                    upperBound = minOf(upperBound, remainings[eq])
+                }
+            }
+
+            if (upperBound < 0) return
+
+            for (value in 0..upperBound) {
                 assignments[varIdx] = value
 
                 if (value > 0) {
