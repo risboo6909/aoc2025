@@ -6,7 +6,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import org.chocosolver.solver.Model
-import org.chocosolver.solver.Solution
 import org.chocosolver.solver.variables.IntVar
 import kotlin.concurrent.atomics.AtomicInt
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
@@ -195,6 +194,8 @@ class Day10 : Solver {
         val numVariables = machine.triggers.size
         val numEquations = machine.part2TargetState.size
 
+        val theoreticalBest = machine.part2TargetState.max()
+
         // lower bounds are always 0
         val upperBounds = IntArray(numVariables) { Int.MAX_VALUE }
 
@@ -235,8 +236,14 @@ class Day10 : Solver {
         model.sum(variables.toTypedArray(), "=", sumVar).post()
         model.setObjective(Model.MINIMIZE, sumVar)
 
-        model.solver.solve()
-        return sumVar.value
+        val solver = model.solver
+        var best = Int.MAX_VALUE
+        while (solver.solve()) {
+            best = sumVar.value
+            if (best == theoreticalBest) break
+        }
+
+        return best
     }
 
     @OptIn(ExperimentalAtomicApi::class)
