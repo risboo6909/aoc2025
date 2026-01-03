@@ -1,15 +1,17 @@
 package calendar
 
-import Solver
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import org.chocosolver.solver.Model
+import org.chocosolver.solver.search.strategy.Search
 import org.chocosolver.solver.variables.IntVar
 import kotlin.concurrent.atomics.AtomicInt
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.math.min
+
+import Solver
 
 class Day10 : Solver {
 
@@ -237,6 +239,12 @@ class Day10 : Solver {
         model.setObjective(Model.MINIMIZE, sumVar)
 
         val solver = model.solver
+
+        // use a search strategy that tries to minimize the sum variable first
+        solver.setSearch(
+            Search.minDomLBSearch(sumVar, *variables.toTypedArray())
+        )
+
         var best = Int.MAX_VALUE
         while (solver.solve()) {
             best = sumVar.value
