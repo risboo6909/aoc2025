@@ -12,6 +12,8 @@ import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.math.min
 
 import Solver
+import org.chocosolver.solver.search.limits.ICounter
+import org.chocosolver.solver.search.limits.NodeCounter
 
 class Day10 : Solver {
 
@@ -242,7 +244,17 @@ class Day10 : Solver {
 
         // use a search strategy that tries to minimize the sum variable first
         solver.setSearch(
-            Search.minDomLBSearch(sumVar, *variables.toTypedArray())
+            Search.minDomLBSearch(sumVar),
+            Search.lastConflict(
+                Search.domOverWDegSearch(*variables.toTypedArray())
+            )
+        )
+
+        solver.setNoGoodRecordingFromRestarts()
+        solver.setLubyRestart(
+            128,
+            NodeCounter(model, 5000),
+        300
         )
 
         var best = Int.MAX_VALUE
@@ -265,7 +277,7 @@ class Day10 : Solver {
             total = machines.map { machine ->
                 async(limited) {
                     val res = solveDiophantineSystem(machine)
-                    println("Solved ${solvedCount.fetchAndAdd(1)}/${machines.size} machines")
+                    println("Solved ${solvedCount.fetchAndAdd(1)}/${machines.size-1} machines")
                     res
                 }
             }.awaitAll().sum()
