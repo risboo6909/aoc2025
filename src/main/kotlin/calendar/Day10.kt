@@ -1,14 +1,16 @@
 package calendar
 
-import kotlin.math.min
+import Solver
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
+import org.chocosolver.solver.Model
+import org.chocosolver.solver.Solution
+import org.chocosolver.solver.variables.IntVar
 import kotlin.concurrent.atomics.AtomicInt
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
-
-import Solver
+import kotlin.math.min
 
 class Day10 : Solver {
 
@@ -70,21 +72,133 @@ class Day10 : Solver {
         return result.toString()
     }
 
-    private fun solveDiophantineSystem(machine: Machine): Int {
-        var solution = Int.MAX_VALUE
+    /**
+     * My own implementation of a Diophantine equation solver. However, it is too slow for the
+     * actual input, so I ended up using the Choco Solver library instead.
+     */
+//    private fun solveDiophantineSystem(machine: Machine): Int {
+//        var solution = Int.MAX_VALUE
+//
+//        val numVariables = machine.triggers.size
+//        val numEquations = machine.part2TargetState.size
+//
+//        val theoreticalBest = machine.part2TargetState.max()
+//
+//        // lower bounds are always 0
+//        val upperBounds = IntArray(numVariables) { Int.MAX_VALUE }
+//
+//        val equations = Array(numEquations) { IntArray(numVariables) { 0 } }
+//        val remainings = IntArray(numEquations) { idx -> machine.part2TargetState[idx] }
+//
+//        val assignments = IntArray(numVariables) { 0 }
+//
+//        for (equationIdx in machine.part2TargetState.indices) {
+//            for (triggerIdx in machine.triggers.indices) {
+//                val trigger = machine.triggers[triggerIdx]
+//                for (variablePos in trigger) {
+//                    if (variablePos == equationIdx) {
+//                        equations[equationIdx][triggerIdx] = 1
+//                        upperBounds[triggerIdx] = min(upperBounds[triggerIdx],
+//                            machine.part2TargetState[equationIdx])
+//                    }
+//                }
+//            }
+//        }
+//
+//        fun inner(varIdx: Int, sumSoFar: Int) {
+//
+//            if (solution == theoreticalBest) {
+//                // can't do better than this
+//                return
+//            }
+//
+//            if (sumSoFar >= solution)  {
+//                // already worse than best found
+//                return
+//            }
+//
+//            if (varIdx >= numVariables) {
+//                // check if all equations are satisfied
+//                if (remainings.all { it == 0 }) {
+//                    solution = min(solution, sumSoFar)
+//                }
+//                return
+//            }
+//
+//            // check constraints
+//            for (eqIdx in 0 until numEquations) {
+//                if (remainings[eqIdx] < 0)
+//                    return
+//
+//                var maxPossible = 0
+//                // pre-caching doesn't help much here
+//                for (v in varIdx until numVariables) {
+//                    maxPossible += equations[eqIdx][v] * upperBounds[v]
+//                }
+//
+//                if (remainings[eqIdx] > maxPossible) {
+//                    return
+//                }
+//            }
+//
+//            var upperBound = upperBounds[varIdx]
+//            for (eq in 0 until numEquations) {
+//                if (equations[eq][varIdx] > 0) {
+//                    upperBound = minOf(upperBound, remainings[eq])
+//                }
+//            }
+//
+//            if (upperBound < 0) return
+//
+//            for (value in 0..upperBound) {
+//                assignments[varIdx] = value
+//
+//                if (value > 0) {
+//                    for (eqIdx in 0 until numEquations) {
+//                        remainings[eqIdx] -= equations[eqIdx][varIdx] * value
+//                    }
+//                }
+//
+//                inner(varIdx + 1, sumSoFar + value)
+//
+//                if (value > 0) {
+//                    for (eqIdx in 0 until numEquations)
+//                        remainings[eqIdx] += equations[eqIdx][varIdx] * value
+//                }
+//            }
+//        }
+//
+//        inner(0, 0)
+//        return solution
+//    }
+//
+//    @OptIn(ExperimentalAtomicApi::class)
+//    private fun part2(machines: List<Machine>): String {
+//        var total = 0
+//        runBlocking {
+//            val limited = Dispatchers.Default.limitedParallelism(
+//                (Runtime.getRuntime().availableProcessors() - 1).coerceAtLeast(1)
+//            )
+//            val solvedCount = AtomicInt(0)
+//            total = machines.map { machine ->
+//                async(limited) {
+//                    val res = solveDiophantineSystem(machine)
+//                    println("Solved ${solvedCount.fetchAndAdd(1)}/${machines.size} machines")
+//                    res
+//                }
+//            }.awaitAll().sum()
+//        }
+//        return total.toString()
+//    }
 
+    private fun solveDiophantineSystem(machine: Machine): Int {
         val numVariables = machine.triggers.size
         val numEquations = machine.part2TargetState.size
-
-        val theoreticalBest = machine.part2TargetState.max()
 
         // lower bounds are always 0
         val upperBounds = IntArray(numVariables) { Int.MAX_VALUE }
 
         val equations = Array(numEquations) { IntArray(numVariables) { 0 } }
-        val remainings = IntArray(numEquations) { idx -> machine.part2TargetState[idx] }
-
-        val assignments = IntArray(numVariables) { 0 }
 
         for (equationIdx in machine.part2TargetState.indices) {
             for (triggerIdx in machine.triggers.indices) {
@@ -92,78 +206,37 @@ class Day10 : Solver {
                 for (variablePos in trigger) {
                     if (variablePos == equationIdx) {
                         equations[equationIdx][triggerIdx] = 1
-                        upperBounds[triggerIdx] = min(upperBounds[triggerIdx],
-                            machine.part2TargetState[equationIdx])
+                        upperBounds[triggerIdx] = min(
+                            upperBounds[triggerIdx],
+                            machine.part2TargetState[equationIdx]
+                        )
                     }
                 }
             }
         }
 
-        fun inner(varIdx: Int, sumSoFar: Int) {
+        val model = Model("DiophantineSolver")
+        val variables = mutableListOf<IntVar>()
 
-            if (solution == theoreticalBest) {
-                // can't do better than this
-                return
-            }
-
-            if (sumSoFar >= solution)  {
-                // already worse than best found
-                return
-            }
-
-            if (varIdx >= numVariables) {
-                // check if all equations are satisfied
-                if (remainings.all { it == 0 }) {
-                    solution = min(solution, sumSoFar)
-                }
-                return
-            }
-
-            // check constraints
-            for (eqIdx in 0 until numEquations) {
-                if (remainings[eqIdx] < 0)
-                    return
-
-                var maxPossible = 0
-                // pre-caching doesn't help much here
-                for (v in varIdx until numVariables) {
-                    maxPossible += equations[eqIdx][v] * upperBounds[v]
-                }
-
-                if (remainings[eqIdx] > maxPossible) {
-                    return
-                }
-            }
-
-            var upperBound = upperBounds[varIdx]
-            for (eq in 0 until numEquations) {
-                if (equations[eq][varIdx] > 0) {
-                    upperBound = minOf(upperBound, remainings[eq])
-                }
-            }
-
-            if (upperBound < 0) return
-
-            for (value in 0..upperBound) {
-                assignments[varIdx] = value
-
-                if (value > 0) {
-                    for (eqIdx in 0 until numEquations) {
-                        remainings[eqIdx] -= equations[eqIdx][varIdx] * value
-                    }
-                }
-
-                inner(varIdx + 1, sumSoFar + value)
-
-                if (value > 0) {
-                    for (eqIdx in 0 until numEquations)
-                        remainings[eqIdx] += equations[eqIdx][varIdx] * value
-                }
-            }
+        for (varIdx in 0 until numVariables) {
+            variables.add(model.intVar("x_$varIdx", 0, upperBounds[varIdx]))
         }
 
-        inner(0, 0)
-        return solution
+        for (eqIdx in 0 until numEquations) {
+            model.scalar(
+                variables.toTypedArray(),
+                equations[eqIdx],
+                "=",
+                machine.part2TargetState[eqIdx]
+            ).post()
+        }
+
+        val sumVar = model.intVar("sum", 0, upperBounds.sum())
+        model.sum(variables.toTypedArray(), "=", sumVar).post()
+        model.setObjective(Model.MINIMIZE, sumVar)
+
+        model.solver.solve()
+        return sumVar.value
     }
 
     @OptIn(ExperimentalAtomicApi::class)
@@ -182,6 +255,7 @@ class Day10 : Solver {
                 }
             }.awaitAll().sum()
         }
+
         return total.toString()
     }
 
